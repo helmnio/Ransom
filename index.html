@@ -2,576 +2,109 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
   <meta name="theme-color" content="#171512">
   <title>Ransom</title>
+  <link rel="stylesheet" href="style.css">
   <style>
-    :root {
-      --ink: #171512;
-      --paper: #f2ead9;
-      --paper-2: #e5dac5;
-      --red: #a83c32;
-      --muted: #6f695f;
-      --line: rgba(23,21,18,.16);
-      --card-w: clamp(78px, 22vw, 126px);
-      --card-h: calc(var(--card-w) * 1.42);
-    }
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    html, body { margin: 0; min-height: 100%; background: var(--ink); color: var(--ink); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
-    body { min-height: 100dvh; overscroll-behavior: none; }
-    button { font: inherit; }
-    .app { min-height: 100dvh; display: flex; flex-direction: column; background:
-      radial-gradient(circle at 50% -20%, rgba(242,234,217,.14), transparent 42%),
-      var(--ink); overflow: hidden; }
-    .topbar { color: var(--paper); padding: max(16px, env(safe-area-inset-top)) 18px 10px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; }
-    .brand { font-family: Georgia, 'Times New Roman', serif; letter-spacing: .18em; font-size: 18px; }
-    .run { justify-self: center; color: rgba(242,234,217,.64); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
-    .icon-btn { justify-self: end; width: 36px; height: 36px; border: 1px solid rgba(242,234,217,.24); border-radius: 50%; color: var(--paper); background: transparent; cursor: pointer; }
-    .status { color: var(--paper); min-height: 58px; padding: 2px 18px 10px; display: flex; align-items: center; justify-content: center; text-align: center; }
-    .status-main { font-family: Georgia, 'Times New Roman', serif; font-size: clamp(20px, 5vw, 28px); }
-    .status-sub { margin-top: 4px; color: rgba(242,234,217,.58); font-size: 11px; letter-spacing: .06em; }
-    .table { flex: 1; min-height: 0; background: var(--paper); border-radius: 26px 26px 0 0; position: relative; padding: 18px 14px calc(18px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; }
-    .piles { display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; gap: 12px; max-width: 520px; width: 100%; margin: 0 auto; }
-    .pile { display: flex; gap: 8px; align-items: center; }
-    .pile.right { justify-content: flex-end; text-align: right; }
-    .mini-card { width: 40px; height: 56px; border-radius: 6px; border: 1px solid var(--ink); flex: 0 0 auto; display: grid; place-items: center; font-weight: 700; background: var(--paper); position: relative; }
-    .mini-card.back { background: repeating-linear-gradient(45deg, var(--ink) 0 3px, var(--paper) 3px 6px); box-shadow: inset 0 0 0 3px var(--paper), inset 0 0 0 4px var(--ink); }
-    .mini-card.discard { transform: rotate(4deg); font-family: Georgia, 'Times New Roman', serif; font-size: 18px; }
-    .pile-label { font-size: 9px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
-    .pile-count { font-size: 15px; margin-top: 2px; }
-    .deck-wrap { display: flex; flex-direction: column; align-items: center; }
-    .deck-count { font-size: 10px; color: var(--muted); margin-top: 6px; }
-    .goal { max-width: 520px; width: 100%; margin: 16px auto 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 9px 2px; display: flex; justify-content: space-between; gap: 10px; font-size: 10px; color: var(--muted); }
-    .goal strong { color: var(--ink); font-weight: 700; }
-    .hand-zone { flex: 1; min-height: 250px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; touch-action: none; }
-    .hand-label { margin-bottom: 12px; font-size: 10px; text-transform: uppercase; letter-spacing: .14em; color: var(--muted); transition: opacity .2s; }
-    .hand { width: 100%; height: calc(var(--card-h) + 44px); position: relative; display: flex; justify-content: center; align-items: end; }
-    .playing-card { width: var(--card-w); height: var(--card-h); border: 1.5px solid var(--ink); border-radius: 10px; background: #fffdf7; position: absolute; bottom: 12px; user-select: none; -webkit-user-select: none; touch-action: none; box-shadow: 0 8px 14px rgba(23,21,18,.12); transition: transform .2s cubic-bezier(.2,.8,.2,1), opacity .18s ease; cursor: grab; transform-origin: 50% 110%; }
-    .playing-card:active { cursor: grabbing; }
-    .playing-card.red { color: var(--red); }
-    .playing-card.locked { opacity: .56; cursor: not-allowed; }
-    .playing-card.drawn { box-shadow: 0 0 0 3px var(--ink), 0 10px 18px rgba(23,21,18,.18); }
-    .corner { position: absolute; top: 7px; left: 8px; display: flex; flex-direction: column; align-items: center; font-family: Georgia, 'Times New Roman', serif; font-weight: 700; line-height: .92; font-size: clamp(17px, 4.4vw, 24px); }
-    .corner.bottom { top: auto; left: auto; right: 8px; bottom: 7px; transform: rotate(180deg); }
-    .suit { font-size: .8em; margin-top: 3px; }
-    .center { position: absolute; inset: 28px 8px; display: grid; place-items: center; font-family: Georgia, 'Times New Roman', serif; font-size: clamp(36px, 11vw, 64px); }
-    .joker-center { font-size: clamp(16px, 5vw, 25px); letter-spacing: .08em; writing-mode: vertical-rl; transform: rotate(180deg); }
-    .trap-tag, .key-tag { position: absolute; left: 50%; bottom: 9px; transform: translateX(-50%); border: 1px solid currentColor; padding: 2px 5px; border-radius: 99px; font-size: 7px; letter-spacing: .1em; text-transform: uppercase; background: #fffdf7; }
-    .swipe-hint { height: 26px; font-size: 10px; color: var(--muted); display: flex; align-items: center; justify-content: center; gap: 6px; }
-    .swipe-hint b { color: var(--ink); }
-    .controls { max-width: 520px; width: 100%; margin: 0 auto; }
-    .primary { width: 100%; border: 0; border-radius: 999px; background: var(--ink); color: var(--paper); padding: 15px 18px; font-weight: 700; letter-spacing: .05em; cursor: pointer; }
-    .primary:disabled { opacity: .42; cursor: default; }
-    .toast { pointer-events: none; position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%) scale(.96); background: var(--ink); color: var(--paper); padding: 10px 14px; border-radius: 999px; font-size: 11px; letter-spacing: .08em; opacity: 0; transition: .18s; z-index: 20; white-space: nowrap; }
-    .toast.show { opacity: 1; transform: translate(-50%,-50%) scale(1); }
-    .overlay { position: absolute; inset: 0; z-index: 40; background: rgba(23,21,18,.58); display: none; align-items: end; }
-    .overlay.open { display: flex; }
-    .sheet { width: 100%; max-height: 88%; overflow: auto; border-radius: 24px 24px 0 0; background: var(--paper); padding: 18px 18px calc(24px + env(safe-area-inset-bottom)); }
-    .sheet-head { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 12px; }
-    .sheet h2 { font-family: Georgia, 'Times New Roman', serif; margin: 0; font-size: 25px; }
-    .close { border: 1px solid var(--line); border-radius: 50%; width: 36px; height: 36px; background: transparent; }
-    .rules-grid { display: grid; gap: 12px; font-size: 12px; line-height: 1.45; }
-    .rule { border-top: 1px solid var(--line); padding-top: 10px; }
-    .rule strong { display: block; margin-bottom: 3px; }
-    .end-title { font-family: Georgia, 'Times New Roman', serif; font-size: clamp(34px, 10vw, 54px); margin: 4px 0 6px; }
-    .end-copy { color: var(--muted); margin: 0 0 18px; line-height: 1.5; }
-    .stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin: 14px 0 18px; }
-    .stat { border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
-    .stat span { display: block; color: var(--muted); font-size: 9px; text-transform: uppercase; letter-spacing: .08em; }
-    .stat b { display: block; margin-top: 5px; font-size: 18px; }
-    @media (min-width: 650px) {
-      .table { max-width: 760px; width: 100%; margin: 0 auto; }
-      .app { padding-inline: 14px; }
-    }
-    @media (prefers-reduced-motion: reduce) { * { transition-duration: .01ms !important; animation-duration: .01ms !important; } }
+    .progress-wrap{max-width:620px;width:100%;margin:0 auto 10px;padding-top:2px}.progress-meta{display:flex;justify-content:space-between;gap:12px;margin-bottom:7px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}.progress-track{height:8px;border-radius:999px;background:rgba(23,21,18,.12);overflow:hidden}.progress-fill{height:100%;width:0;background:var(--ink);border-radius:inherit;transition:width .2s ease}.table{padding-top:12px}.goal{margin-top:6px}.hand-zone{min-height:290px}.stats{grid-template-columns:repeat(2,1fr)}
   </style>
 </head>
 <body>
-  <main class="app">
-    <header class="topbar">
-      <div class="brand">RANSOM</div>
-      <div class="run" id="runLabel">Run 1 / 3</div>
-      <button class="icon-btn" id="rulesBtn" type="button" aria-label="Open rules">?</button>
-    </header>
+<main class="app">
+  <header class="topbar">
+    <div class="brand">RANSOM</div>
+    <div class="run" id="runLabel">Run 1 / 3</div>
+    <button class="icon-btn" id="rulesBtn" type="button" aria-label="Open rules">?</button>
+  </header>
 
-    <section class="status" aria-live="polite">
-      <div>
-        <div class="status-main" id="statusMain">Build the ransom.</div>
-        <div class="status-sub" id="statusSub">Burn. Draw. Swipe one away.</div>
-      </div>
-    </section>
+  <section class="status" aria-live="polite">
+    <div>
+      <div class="status-main" id="statusMain">Build the ransom.</div>
+      <div class="status-sub" id="statusSub">Drag to order. Swipe up to discard.</div>
+    </div>
+  </section>
 
-    <section class="table">
-      <div class="piles">
-        <div class="pile">
-          <div class="mini-card back" aria-hidden="true"></div>
-          <div><div class="pile-label">Burn</div><div class="pile-count" id="burnCount">0</div></div>
-        </div>
-        <div class="deck-wrap">
-          <div class="mini-card back" aria-hidden="true"></div>
-          <div class="deck-count"><span id="deckCount">49</span> left</div>
-        </div>
-        <div class="pile right">
-          <div><div class="pile-label">Discard</div><div class="pile-count" id="discardCount">0</div></div>
-          <div class="mini-card discard" id="discardTop" aria-hidden="true">—</div>
-        </div>
-      </div>
+  <section class="table">
+    <div class="progress-wrap">
+      <div class="progress-meta"><span>Run progress</span><span id="progressText">0%</span></div>
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
 
-      <div class="goal">
-        <span><strong>OUT:</strong> J-Q-K-A same suit + key</span>
-        <span>4× J/Q/K/A + key</span>
-        <span>4×7 + red joker</span>
-      </div>
+    <div class="goal">
+      <span><strong>OUT:</strong> J-Q-K-A same suit + key</span>
+      <span>4× J/Q/K/A + key</span>
+      <span>4×7 + red joker</span>
+    </div>
 
-      <div class="hand-zone">
-        <div class="toast" id="toast"></div>
-        <div class="hand-label" id="handLabel">Your hand</div>
-        <div class="hand" id="hand" aria-label="Your hand"></div>
-        <div class="swipe-hint" id="swipeHint">Swipe any card <b>away</b> to discard</div>
-      </div>
+    <div class="hand-zone">
+      <div class="toast" id="toast"></div>
+      <div class="hand-label" id="handLabel">Your hand</div>
+      <div class="hand" id="hand" aria-label="Your hand"></div>
+      <div class="swipe-hint" id="swipeHint">Drag sideways to reorder · <b>swipe up to discard</b></div>
+    </div>
 
-      <div class="controls">
-        <button class="primary" id="startBtn" type="button">Start run</button>
-      </div>
+    <div class="controls"><button class="primary" id="startBtn" type="button">Start run</button></div>
 
-      <div class="overlay" id="rulesOverlay" role="dialog" aria-modal="true" aria-label="Ransom rules">
-        <div class="sheet">
-          <div class="sheet-head"><h2>How to escape</h2><button class="close" id="closeRules" type="button" aria-label="Close rules">×</button></div>
-          <div class="rules-grid">
-            <div class="rule"><strong>Every turn</strong>One card burns face-down, one card is drawn, then you swipe one card from the six-card hand into discard. The next burn and draw happen automatically.</div>
-            <div class="rule"><strong>Keys</strong>Any 7 or the Red Joker completes an eligible out hand. Keys are not wild in Standard mode.</div>
-            <div class="rule"><strong>Trap 2s & 5s</strong>If a 2 or 5 is drawn it must stay for that turn. Swipe a different non-trap card. Trap cards can be discarded on a later normal turn.</div>
-            <div class="rule"><strong>Black Joker</strong>Destroys the hand. Your cards go to discard and the Black Joker goes to burn. You then rebuild the hand from the deck.</div>
-            <div class="rule"><strong>Red Joker</strong>Swipe it into discard to reshuffle the remaining deck and burn pile together. Discards stay gone. If Black Joker is drawn while Red Joker is held, both cancel each other and the rest of the hand survives.</div>
-            <div class="rule"><strong>Standard game</strong>You have up to three runs. Complete an out hand during any run to escape.</div>
-          </div>
+    <div class="overlay" id="rulesOverlay" role="dialog" aria-modal="true">
+      <div class="sheet">
+        <div class="sheet-head"><h2>How to escape</h2><button class="close" id="closeRules" type="button">×</button></div>
+        <div class="rules-grid">
+          <div class="rule"><strong>Every turn</strong>A card burns, one is drawn, then swipe one card upward to discard. The next turn starts automatically.</div>
+          <div class="rule"><strong>Order your hand</strong>Drag cards left or right and release to arrange them however you like.</div>
+          <div class="rule"><strong>Keys</strong>Any 7 or the Red Joker completes an eligible out hand.</div>
+          <div class="rule"><strong>Trap 2s & 5s</strong>If drawn, they must stay for that turn. Discard a different non-trap card.</div>
+          <div class="rule"><strong>Black Joker</strong>Destroys the hand. The Black Joker moves to burn and the hand is rebuilt.</div>
+          <div class="rule"><strong>Red Joker</strong>Discard it to reshuffle the remaining deck and burn pile together.</div>
         </div>
       </div>
+    </div>
 
-      <div class="overlay" id="endOverlay" role="dialog" aria-modal="true" aria-label="Run result">
-        <div class="sheet">
-          <div class="pile-label" id="endEyebrow">Run complete</div>
-          <div class="end-title" id="endTitle">Escaped.</div>
-          <p class="end-copy" id="endCopy"></p>
-          <div class="stats">
-            <div class="stat"><span>Draws</span><b id="statDraws">0</b></div>
-            <div class="stat"><span>Burned</span><b id="statBurned">0</b></div>
-            <div class="stat"><span>Discarded</span><b id="statDiscarded">0</b></div>
-          </div>
-          <button class="primary" id="endBtn" type="button">Play again</button>
-        </div>
+    <div class="overlay" id="endOverlay" role="dialog" aria-modal="true">
+      <div class="sheet">
+        <div class="pile-label" id="endEyebrow">Run complete</div>
+        <div class="end-title" id="endTitle">Escaped.</div>
+        <p class="end-copy" id="endCopy"></p>
+        <div class="stats"><div class="stat"><span>Draws</span><b id="statDraws">0</b></div><div class="stat"><span>Run used</span><b id="statUsed">0%</b></div></div>
+        <button class="primary" id="endBtn" type="button">Play again</button>
       </div>
-    </section>
-  </main>
+    </div>
+  </section>
+</main>
 
-  <script>
-    (() => {
-      const suits = [
-        { name: 'hearts', symbol: '♥', red: true },
-        { name: 'diamonds', symbol: '♦', red: true },
-        { name: 'clubs', symbol: '♣', red: false },
-        { name: 'spades', symbol: '♠', red: false }
-      ];
-      const ranks = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
-      const els = Object.fromEntries([
-        'hand','deckCount','burnCount','discardCount','discardTop','statusMain','statusSub','handLabel','swipeHint','startBtn','runLabel','toast','rulesBtn','rulesOverlay','closeRules','endOverlay','endEyebrow','endTitle','endCopy','statDraws','statBurned','statDiscarded','endBtn'
-      ].map(id => [id, document.getElementById(id)]));
-
-      let game = null;
-      let runNumber = 1;
-      let activePointers = new Map();
-      let toastTimer = null;
-
-      function buildDeck() {
-        const deck = [];
-        suits.forEach(suit => ranks.forEach(rank => deck.push({
-          id: `${rank}-${suit.name}-${Math.random().toString(36).slice(2)}`,
-          rank, suit: suit.name, symbol: suit.symbol, red: suit.red, joker: null
-        })));
-        deck.push({ id: `RJ-${Math.random()}`, rank: 'RJ', suit: null, symbol: '★', red: true, joker: 'red' });
-        deck.push({ id: `BJ-${Math.random()}`, rank: 'BJ', suit: null, symbol: '★', red: false, joker: 'black' });
-        return shuffle(deck);
-      }
-
-      function shuffle(arr) {
-        for (let i = arr.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [arr[i], arr[j]] = [arr[j], arr[i]];
-        }
-        return arr;
-      }
-
-      function isTrap(card) { return card && !card.joker && (card.rank === '2' || card.rank === '5'); }
-      function isKey(card) { return card && (card.rank === '7' || card.joker === 'red'); }
-      function isValue(card) { return card && (['J','Q','K','A','7'].includes(card.rank) || card.joker === 'red'); }
-
-      function newRun() {
-        const deck = buildDeck();
-        game = {
-          deck,
-          hand: deck.splice(0, 5),
-          burn: [],
-          discard: [],
-          phase: 'idle',
-          drawnId: null,
-          trapDrawn: false,
-          draws: 0,
-          ended: false,
-          winType: null
-        };
-        els.endOverlay.classList.remove('open');
-        els.startBtn.hidden = false;
-        els.startBtn.disabled = false;
-        els.startBtn.textContent = 'Start run';
-        els.statusMain.textContent = 'Build the ransom.';
-        els.statusSub.textContent = 'Burn. Draw. Swipe one away.';
-        els.runLabel.textContent = `Run ${runNumber} / 3`;
-        render();
-        const out = getOut(game.hand);
-        if (out) finishWin(out);
-      }
-
-      function startRun() {
-        if (!game || game.ended) return;
-        els.startBtn.hidden = true;
-        game.phase = 'cycling';
-        cycleTurn();
-      }
-
-      function cycleTurn() {
-        if (!game || game.ended) return;
-        if (game.hand.length < 5) {
-          rebuildStep();
-          return;
-        }
-        if (game.deck.length < 2) {
-          finishLoss();
-          return;
-        }
-
-        game.phase = 'drawing';
-        const burned = game.deck.shift();
-        game.burn.push(burned);
-        const drawn = game.deck.shift();
-        game.draws++;
-
-        if (drawn.joker === 'black') {
-          handleBlackJoker(drawn);
-          return;
-        }
-
-        game.hand.push(drawn);
-        game.drawnId = drawn.id;
-        game.trapDrawn = isTrap(drawn);
-        game.phase = 'discard';
-        updateStatusForDraw(drawn);
-        render();
-      }
-
-      function rebuildStep() {
-        if (game.deck.length < 2) {
-          finishLoss();
-          return;
-        }
-        const burned = game.deck.shift();
-        game.burn.push(burned);
-        const drawn = game.deck.shift();
-        game.draws++;
-
-        if (drawn.joker === 'black') {
-          handleBlackJoker(drawn);
-          return;
-        }
-
-        game.hand.push(drawn);
-        game.drawnId = drawn.id;
-        game.trapDrawn = false;
-        game.phase = 'rebuild';
-        els.statusMain.textContent = 'Rebuilding your hand.';
-        els.statusSub.textContent = `${game.hand.length} of 5 cards recovered`;
-        render();
-
-        if (game.hand.length >= 5) {
-          const out = getOut(game.hand);
-          if (out) { finishWin(out); return; }
-          setTimeout(cycleTurn, 360);
-        } else {
-          setTimeout(rebuildStep, 360);
-        }
-      }
-
-      function handleBlackJoker(black) {
-        const redIndex = game.hand.findIndex(c => c.joker === 'red');
-        if (redIndex >= 0) {
-          const red = game.hand.splice(redIndex, 1)[0];
-          game.discard.push(red, black);
-          game.drawnId = null;
-          game.trapDrawn = false;
-          game.phase = 'rebuild';
-          showToast('Jokers cancel');
-          els.statusMain.textContent = 'The jokers cancel.';
-          els.statusSub.textContent = 'Your hand survives. Replacing the lost key…';
-          render();
-          setTimeout(rebuildStep, 520);
-          return;
-        }
-
-        game.discard.push(...game.hand);
-        game.hand = [];
-        game.burn.push(black);
-        game.drawnId = null;
-        game.trapDrawn = false;
-        game.phase = 'rebuild';
-        showToast('Hand destroyed');
-        els.statusMain.textContent = 'Black Joker.';
-        els.statusSub.textContent = 'Hand destroyed. Rebuilding…';
-        render();
-        setTimeout(rebuildStep, 650);
-      }
-
-      function canDiscard(card) {
-        if (!game || game.phase !== 'discard') return false;
-        if (game.trapDrawn && isTrap(card)) return false;
-        return true;
-      }
-
-      function discardCard(cardId, cardEl, velocityX = 0) {
-        if (!game || game.phase !== 'discard') return;
-        const index = game.hand.findIndex(c => c.id === cardId);
-        if (index < 0) return;
-        const card = game.hand[index];
-        if (!canDiscard(card)) {
-          showToast('Trap card must stay');
-          if (cardEl) cardEl.style.transform = cardEl.dataset.rest || '';
-          return;
-        }
-
-        game.phase = 'animating';
-        const dir = velocityX === 0 ? 1 : Math.sign(velocityX);
-        if (cardEl) {
-          cardEl.style.transition = 'transform .18s ease-in, opacity .18s ease-in';
-          cardEl.style.transform = `translate(${dir * 150}px, -100px) rotate(${dir * 22}deg)`;
-          cardEl.style.opacity = '0';
-        }
-
-        setTimeout(() => {
-          game.hand.splice(index, 1);
-          game.discard.push(card);
-          const playedRed = card.joker === 'red';
-          game.drawnId = null;
-          game.trapDrawn = false;
-
-          if (playedRed) {
-            game.deck = shuffle([...game.deck, ...game.burn]);
-            game.burn = [];
-            showToast('Burn pile recovered');
-          }
-
-          const out = getOut(game.hand);
-          if (out) { render(); finishWin(out); return; }
-          game.phase = 'cycling';
-          render();
-          setTimeout(cycleTurn, 190);
-        }, 180);
-      }
-
-      function getOut(hand) {
-        if (!hand || hand.length !== 5) return null;
-        const redJoker = hand.some(c => c.joker === 'red');
-        const sevens = hand.filter(c => c.rank === '7');
-        if (redJoker && sevens.length === 4) return 'All the Keys';
-
-        const keys = hand.filter(isKey);
-        if (keys.length !== 1) return null;
-        const core = hand.filter(c => !isKey(c));
-        if (core.length !== 4) return null;
-
-        const sameSuit = core.every(c => c.suit && c.suit === core[0].suit);
-        const royalRanks = new Set(core.map(c => c.rank));
-        if (sameSuit && ['J','Q','K','A'].every(r => royalRanks.has(r))) return 'Royal Flush Out';
-
-        if (core.every(c => ['J','Q','K','A'].includes(c.rank)) && core.every(c => c.rank === core[0].rank)) return 'Four of a Kind Out';
-        return null;
-      }
-
-      function updateStatusForDraw(card) {
-        if (isTrap(card)) {
-          els.statusMain.textContent = `${card.rank} drawn — it stays.`;
-          els.statusSub.textContent = 'Swipe a different non-trap card.';
-          return;
-        }
-        if (card.joker === 'red') {
-          els.statusMain.textContent = 'Red Joker drawn.';
-          els.statusSub.textContent = 'Keep the key, or swipe it to recover the burn pile.';
-          return;
-        }
-        els.statusMain.textContent = `${displayRank(card)} drawn.`;
-        els.statusSub.textContent = 'Swipe one card away.';
-      }
-
-      function displayRank(card) {
-        if (card.joker === 'red') return 'Red Joker';
-        if (card.joker === 'black') return 'Black Joker';
-        return `${card.rank}${card.symbol}`;
-      }
-
-      function render() {
-        if (!game) return;
-        els.deckCount.textContent = game.deck.length;
-        els.burnCount.textContent = game.burn.length;
-        els.discardCount.textContent = game.discard.length;
-        els.discardTop.textContent = game.discard.length ? compactCard(game.discard[game.discard.length - 1]) : '—';
-        const topDiscard = game.discard[game.discard.length - 1];
-        els.discardTop.style.color = topDiscard && topDiscard.red ? 'var(--red)' : 'var(--ink)';
-
-        if (game.phase === 'discard') {
-          els.handLabel.textContent = game.trapDrawn ? 'Trap draw — choose another card' : 'Choose your discard';
-          els.swipeHint.innerHTML = game.trapDrawn ? 'Swipe a <b>non-trap</b> card away' : 'Swipe any card <b>away</b> to discard';
-        } else if (game.phase === 'rebuild') {
-          els.handLabel.textContent = 'Rebuilding hand';
-          els.swipeHint.textContent = 'No discard while rebuilding';
-        } else {
-          els.handLabel.textContent = 'Your hand';
-          els.swipeHint.innerHTML = 'Burn → draw → <b>swipe</b> → repeat';
-        }
-
-        renderHand();
-      }
-
-      function compactCard(card) {
-        if (!card) return '—';
-        if (card.joker === 'red') return 'R★';
-        if (card.joker === 'black') return 'B★';
-        return `${card.rank}${card.symbol}`;
-      }
-
-      function renderHand() {
-        els.hand.innerHTML = '';
-        const n = game.hand.length;
-        const fan = Math.min(15, 54 / Math.max(1, n));
-        const spread = Math.min(58, 260 / Math.max(1, n - 1));
-        game.hand.forEach((card, i) => {
-          const el = document.createElement('div');
-          el.className = `playing-card${card.red ? ' red' : ''}${card.id === game.drawnId ? ' drawn' : ''}${canDiscard(card) ? '' : ' locked'}`;
-          el.dataset.id = card.id;
-          el.setAttribute('role', 'button');
-          el.setAttribute('aria-label', `${displayRank(card)}${canDiscard(card) ? ', swipe to discard' : ', cannot discard now'}`);
-          const offset = (i - (n - 1) / 2) * spread;
-          const angle = (i - (n - 1) / 2) * fan / Math.max(1, n - 1);
-          const lift = Math.abs(i - (n - 1) / 2) * 2.2;
-          const rest = `translateX(${offset}px) translateY(${lift}px) rotate(${angle}deg)`;
-          el.dataset.rest = rest;
-          el.style.transform = rest;
-          el.style.zIndex = String(i + 1);
-          el.innerHTML = cardMarkup(card);
-          attachSwipe(el, card);
-          els.hand.appendChild(el);
-        });
-      }
-
-      function cardMarkup(card) {
-        const label = card.joker ? (card.joker === 'red' ? 'RED' : 'BLACK') : card.rank;
-        const symbol = card.joker ? '★' : card.symbol;
-        const center = card.joker ? `<div class="center joker-center">${label} JOKER</div>` : `<div class="center">${symbol}</div>`;
-        const tag = isTrap(card) ? '<div class="trap-tag">trap</div>' : isKey(card) ? '<div class="key-tag">key</div>' : '';
-        return `<div class="corner"><span>${card.joker ? '★' : card.rank}</span><span class="suit">${symbol}</span></div>${center}<div class="corner bottom"><span>${card.joker ? '★' : card.rank}</span><span class="suit">${symbol}</span></div>${tag}`;
-      }
-
-      function attachSwipe(el, card) {
-        el.addEventListener('pointerdown', e => {
-          if (!canDiscard(card)) return;
-          el.setPointerCapture(e.pointerId);
-          activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY, t: performance.now(), lastX: e.clientX });
-          el.style.transition = 'none';
-        });
-        el.addEventListener('pointermove', e => {
-          const p = activePointers.get(e.pointerId);
-          if (!p || !canDiscard(card)) return;
-          const dx = e.clientX - p.x;
-          const dy = e.clientY - p.y;
-          p.lastX = e.clientX;
-          el.style.transform = `translate(${dx}px, ${Math.min(30, dy)}px) rotate(${dx * .08}deg)`;
-        });
-        el.addEventListener('pointerup', e => {
-          const p = activePointers.get(e.pointerId);
-          activePointers.delete(e.pointerId);
-          if (!p || !canDiscard(card)) return;
-          const dx = e.clientX - p.x;
-          const dy = e.clientY - p.y;
-          const dt = Math.max(1, performance.now() - p.t);
-          const vx = dx / dt;
-          const distance = Math.hypot(dx, dy);
-          if (distance > 52 || Math.abs(vx) > .5) discardCard(card.id, el, dx || vx);
-          else {
-            el.style.transition = 'transform .2s cubic-bezier(.2,.8,.2,1)';
-            el.style.transform = el.dataset.rest;
-          }
-        });
-        el.addEventListener('pointercancel', e => {
-          activePointers.delete(e.pointerId);
-          el.style.transition = 'transform .2s cubic-bezier(.2,.8,.2,1)';
-          el.style.transform = el.dataset.rest;
-        });
-        el.addEventListener('dblclick', () => { if (canDiscard(card)) discardCard(card.id, el, 1); });
-      }
-
-      function finishWin(type) {
-        if (!game || game.ended) return;
-        game.ended = true;
-        game.winType = type;
-        game.phase = 'ended';
-        render();
-        els.statusMain.textContent = 'Ransom complete.';
-        els.statusSub.textContent = type;
-        els.endEyebrow.textContent = `Run ${runNumber} of 3`;
-        els.endTitle.textContent = 'Escaped.';
-        els.endCopy.textContent = `${type}. You built a valid five-card out before the deck ran dry.`;
-        els.endBtn.textContent = 'Play again';
-        fillStats();
-        setTimeout(() => els.endOverlay.classList.add('open'), 450);
-      }
-
-      function finishLoss() {
-        if (!game || game.ended) return;
-        game.ended = true;
-        game.phase = 'ended';
-        render();
-        els.statusMain.textContent = 'Deck ran dry.';
-        els.statusSub.textContent = runNumber < 3 ? 'Another run remains.' : 'No runs left.';
-        els.endEyebrow.textContent = `Run ${runNumber} of 3`;
-        els.endTitle.textContent = runNumber < 3 ? 'Still captive.' : 'Ransom failed.';
-        els.endCopy.textContent = runNumber < 3 ? 'No valid out this run. Reshuffle and take another shot.' : 'Three runs gone without an out. Start a new game to try again.';
-        els.endBtn.textContent = runNumber < 3 ? `Start run ${runNumber + 1}` : 'New game';
-        fillStats();
-        setTimeout(() => els.endOverlay.classList.add('open'), 300);
-      }
-
-      function fillStats() {
-        els.statDraws.textContent = game.draws;
-        els.statBurned.textContent = game.burn.length;
-        els.statDiscarded.textContent = game.discard.length;
-      }
-
-      function showToast(text) {
-        clearTimeout(toastTimer);
-        els.toast.textContent = text;
-        els.toast.classList.add('show');
-        toastTimer = setTimeout(() => els.toast.classList.remove('show'), 900);
-      }
-
-      els.startBtn.addEventListener('click', startRun);
-      els.rulesBtn.addEventListener('click', () => els.rulesOverlay.classList.add('open'));
-      els.closeRules.addEventListener('click', () => els.rulesOverlay.classList.remove('open'));
-      els.rulesOverlay.addEventListener('click', e => { if (e.target === els.rulesOverlay) els.rulesOverlay.classList.remove('open'); });
-      els.endBtn.addEventListener('click', () => {
-        const won = game && game.winType;
-        if (won || runNumber >= 3) runNumber = 1;
-        else runNumber++;
-        newRun();
-      });
-
-      newRun();
-    })();
-  </script>
+<script>
+(() => {
+  const suits=[['hearts','♥',1],['diamonds','♦',1],['clubs','♣',0],['spades','♠',0]], ranks=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+  const $=id=>document.getElementById(id);
+  const E={hand:$('hand'),statusMain:$('statusMain'),statusSub:$('statusSub'),handLabel:$('handLabel'),swipeHint:$('swipeHint'),startBtn:$('startBtn'),runLabel:$('runLabel'),progressFill:$('progressFill'),progressText:$('progressText'),toast:$('toast'),rulesBtn:$('rulesBtn'),rulesOverlay:$('rulesOverlay'),closeRules:$('closeRules'),endOverlay:$('endOverlay'),endEyebrow:$('endEyebrow'),endTitle:$('endTitle'),endCopy:$('endCopy'),statDraws:$('statDraws'),statUsed:$('statUsed'),endBtn:$('endBtn')};
+  let run=1,game=null,toastTimer=null,drag=null;
+  const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+  const buildDeck=()=>shuffle(suits.flatMap(([suit,symbol,red])=>ranks.map(rank=>({id:crypto.randomUUID(),rank,suit,symbol,red:!!red,joker:null}))).concat([{id:crypto.randomUUID(),rank:'RJ',symbol:'★',red:true,joker:'red'},{id:crypto.randomUUID(),rank:'BJ',symbol:'★',red:false,joker:'black'}]));
+  const trap=c=>c&&!c.joker&&(c.rank==='2'||c.rank==='5');
+  const key=c=>c&&(c.rank==='7'||c.joker==='red');
+  const label=c=>c.joker?(c.joker==='red'?'Red Joker':'Black Joker'):`${c.rank}${c.symbol}`;
+  function getOut(hand){if(hand.length!==5)return null;const rj=hand.some(c=>c.joker==='red'),sevens=hand.filter(c=>c.rank==='7');if(rj&&sevens.length===4)return'All the Keys';const keys=hand.filter(key);if(keys.length!==1)return null;const core=hand.filter(c=>!key(c));if(core.length!==4)return null;const ranksSet=new Set(core.map(c=>c.rank));if(core.every(c=>c.suit===core[0].suit)&&['J','Q','K','A'].every(r=>ranksSet.has(r)))return'Royal Flush Out';if(core.every(c=>['J','Q','K','A'].includes(c.rank)&&c.rank===core[0].rank))return'Four of a Kind Out';return null}
+  function newRun(){const deck=buildDeck();game={deck,hand:deck.splice(0,5),burn:[],discard:[],drawnId:null,trapDrawn:false,draws:0,started:false,ended:false,initialPlayable:49};E.endOverlay.classList.remove('open');E.startBtn.hidden=false;E.runLabel.textContent=`Run ${run} / 3`;E.statusMain.textContent='Build the ransom.';E.statusSub.textContent='Drag to order. Swipe up to discard.';render();const out=getOut(game.hand);if(out)win(out)}
+  function progress(){const remaining=Math.max(0,game.deck.length);const used=Math.max(0,game.initialPlayable-remaining);return Math.max(0,Math.min(100,Math.round(used/game.initialPlayable*100)))}
+  function render(){window.ransomGame=game;const p=progress();E.progressFill.style.width=p+'%';E.progressText.textContent=p+'%';E.hand.innerHTML='';game.hand.forEach(card=>{const el=document.createElement('div');el.className=`playing-card${card.red?' red':''}${card.id===game.drawnId?' drawn':''}${game.trapDrawn&&trap(card)?' locked':''}`;el.dataset.id=card.id;el.innerHTML=markup(card);E.hand.appendChild(el)});E.handLabel.textContent=game.started?'Your hand':'Starting hand'}
+  function markup(c){const s=c.joker?'★':c.symbol;const center=c.joker?`<div class="center joker-center">${c.joker==='red'?'RED':'BLACK'} JOKER</div>`:`<div class="center">${s}</div>`;const tag=trap(c)?'<div class="trap-tag">trap</div>':key(c)?'<div class="key-tag">key</div>':'';return `<div class="corner"><span>${c.joker?'★':c.rank}</span><span class="suit">${s}</span></div>${center}<div class="corner bottom"><span>${c.joker?'★':c.rank}</span><span class="suit">${s}</span></div>${tag}`}
+  function start(){if(game.started)return;game.started=true;E.startBtn.hidden=true;turn()}
+  function turn(){if(game.ended)return;if(game.deck.length<2)return lose();game.burn.push(game.deck.shift());const drawn=game.deck.shift();game.draws++;if(drawn.joker==='black')return blackJoker(drawn);game.hand.push(drawn);game.drawnId=drawn.id;game.trapDrawn=trap(drawn);E.statusMain.textContent=game.trapDrawn?`${drawn.rank} drawn — it stays.`:`${label(drawn)} drawn.`;E.statusSub.textContent=game.trapDrawn?'Swipe a different card up.':'Swipe one card up.';render()}
+  function blackJoker(black){const ri=game.hand.findIndex(c=>c.joker==='red');if(ri>=0){game.discard.push(game.hand.splice(ri,1)[0],black);flash('Jokers cancel');return refill()}game.discard.push(...game.hand);game.hand=[];game.burn.push(black);flash('Hand destroyed');refill()}
+  function refill(){game.drawnId=null;game.trapDrawn=false;if(game.hand.length>=5){render();return setTimeout(turn,250)}if(game.deck.length<2)return lose();game.burn.push(game.deck.shift());const c=game.deck.shift();game.draws++;if(c.joker==='black')return blackJoker(c);game.hand.push(c);render();setTimeout(refill,220)}
+  function discard(id){if(game.ended)return;const i=game.hand.findIndex(c=>c.id===id);if(i<0)return;const c=game.hand[i];if(game.trapDrawn&&trap(c)){flash('Trap card must stay');return render()}game.hand.splice(i,1);game.discard.push(c);if(c.joker==='red'){game.deck=shuffle([...game.deck,...game.burn]);game.burn=[];flash('Burn pile recovered')}game.drawnId=null;game.trapDrawn=false;const out=getOut(game.hand);if(out){render();return win(out)}render();setTimeout(turn,150)}
+  function flash(t){clearTimeout(toastTimer);E.toast.textContent=t;E.toast.classList.add('show');toastTimer=setTimeout(()=>E.toast.classList.remove('show'),850)}
+  function win(type){game.ended=true;E.statusMain.textContent='Ransom complete.';E.statusSub.textContent=type;end(true,type)}
+  function lose(){game.ended=true;E.statusMain.textContent='Run over.';E.statusSub.textContent=run<3?'Another run remains.':'No runs left.';end(false)}
+  function end(won,type){const p=progress();E.endEyebrow.textContent=`Run ${run} of 3`;E.endTitle.textContent=won?'Escaped.':run<3?'Still captive.':'Ransom failed.';E.endCopy.textContent=won?`${type}. You completed a valid out.`:run<3?'No out this run. Reshuffle and try again.':'Three runs gone without an out.';E.statDraws.textContent=game.draws;E.statUsed.textContent=p+'%';E.endBtn.textContent=won||run===3?'New game':`Start run ${run+1}`;setTimeout(()=>E.endOverlay.classList.add('open'),250)}
+  function syncOrder(){const map=new Map(game.hand.map(c=>[c.id,c]));game.hand=[...E.hand.children].map(el=>map.get(el.dataset.id)).filter(Boolean)}
+  E.hand.addEventListener('pointerdown',e=>{const card=e.target.closest('.playing-card');if(!card||!game.started||game.ended)return;drag={card,id:e.pointerId,x:e.clientX,y:e.clientY,mode:null};card.setPointerCapture(e.pointerId);card.classList.add('dragging')});
+  E.hand.addEventListener('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(!drag.mode&&(Math.abs(dx)>10||Math.abs(dy)>10))drag.mode=(dy<0&&Math.abs(dy)>Math.abs(dx))?'discard':'reorder';if(drag.mode==='discard'){drag.card.style.transform=`translateY(${Math.min(0,dy)}px)`;drag.card.style.opacity=Math.max(.35,1+dy/170)}else if(drag.mode==='reorder'){drag.card.style.transform='translateY(-8px)';const others=[...E.hand.children].filter(x=>x!==drag.card);const before=others.find(x=>e.clientX<x.getBoundingClientRect().left+x.offsetWidth/2);before?E.hand.insertBefore(drag.card,before):E.hand.appendChild(drag.card)}});
+  function release(e){if(!drag||drag.id!==e.pointerId)return;const dy=e.clientY-drag.y,{card,mode}=drag;drag=null;card.classList.remove('dragging');card.style.transform='';card.style.opacity='';if(mode==='discard'&&dy<-58)return discard(card.dataset.id);syncOrder()}
+  E.hand.addEventListener('pointerup',release);E.hand.addEventListener('pointercancel',release);
+  E.startBtn.addEventListener('click',start);E.rulesBtn.addEventListener('click',()=>E.rulesOverlay.classList.add('open'));E.closeRules.addEventListener('click',()=>E.rulesOverlay.classList.remove('open'));E.rulesOverlay.addEventListener('click',e=>{if(e.target===E.rulesOverlay)E.rulesOverlay.classList.remove('open')});E.endBtn.addEventListener('click',()=>{if(game.ended&&run<3&&!game.winType){run++}else run=1;newRun()});
+  newRun();
+})();
+</script>
 </body>
 </html>
